@@ -30,9 +30,42 @@ type RewriteResponse = {
   elapsed_ms: number;
 };
 
+type EasterEgg = {
+  easter_egg: true;
+  message: string;
+  cta_label: string;
+  cta_url: string;
+  author: string;
+  author_email: string;
+};
+
+function isEasterEgg(body: unknown): body is EasterEgg {
+  return (
+    typeof body === 'object' &&
+    body !== null &&
+    (body as { easter_egg?: unknown }).easter_egg === true
+  );
+}
+
 function evidenceId(card: EvidenceCard): string {
   return `${card.slug}|${card.source_span[0]}|${card.source_span[1]}`;
 }
+
+const DEMO_CLAIMS: { label: string; claim: string }[] = [
+  {
+    label: 'Stripe-on-Stripe',
+    claim: 'Stripe Billing helps subscription companies grow internationally.',
+  },
+  {
+    label: 'Known customer',
+    claim:
+      'Atlassian saw significant subscription revenue growth after migrating to Stripe Billing.',
+  },
+  {
+    label: 'Vague-generic',
+    claim: 'Modern payment platforms drive higher conversion for SaaS.',
+  },
+];
 
 export default function Page() {
   const [claim, setClaim] = useState('');
@@ -46,7 +79,19 @@ export default function Page() {
   const [rewriteLoading, setRewriteLoading] = useState(false);
   const [rewriteError, setRewriteError] = useState<string | null>(null);
 
+  const [easterEgg, setEasterEgg] = useState<EasterEgg | null>(null);
+
   const canSubmit = claim.trim().length > 0 && !loading;
+
+  function loadDemoClaim(text: string) {
+    setClaim(text);
+    setCards(null);
+    setError(null);
+    setSelectedId(null);
+    setRewrite(null);
+    setRewriteError(null);
+    setEasterEgg(null);
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -57,6 +102,7 @@ export default function Page() {
     setSelectedId(null);
     setRewrite(null);
     setRewriteError(null);
+    setEasterEgg(null);
     const trimmed = claim.trim();
     setSubmittedClaim(trimmed);
     try {
@@ -68,8 +114,12 @@ export default function Page() {
       if (!res.ok) {
         throw new Error(`Request failed (${res.status})`);
       }
-      const data: ApiResponse = await res.json();
-      setCards(data.cards);
+      const data = await res.json();
+      if (isEasterEgg(data)) {
+        setEasterEgg(data);
+      } else {
+        setCards((data as ApiResponse).cards);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong');
     } finally {
@@ -93,8 +143,13 @@ export default function Page() {
       if (!res.ok) {
         throw new Error(`Rewrite failed (${res.status})`);
       }
-      const data: RewriteResponse = await res.json();
-      setRewrite(data);
+      const data = await res.json();
+      if (isEasterEgg(data)) {
+        setEasterEgg(data);
+        setSelectedId(null);
+      } else {
+        setRewrite(data as RewriteResponse);
+      }
     } catch (err) {
       setRewriteError(err instanceof Error ? err.message : 'Something went wrong');
     } finally {
@@ -106,16 +161,37 @@ export default function Page() {
     <main className="min-h-screen bg-slate-50">
       <div className="mx-auto max-w-2xl px-5 py-10 sm:py-16">
         <header className="mb-8">
-          <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight text-slate-900">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-indigo-600">
+            Claim → evidence → Stripe-voice rewrite
+          </p>
+          <h1 className="mt-2 text-3xl sm:text-4xl font-semibold tracking-tight text-slate-900">
             Maester
           </h1>
-          <p className="mt-2 text-sm sm:text-base text-slate-600">
+          <p className="mt-3 text-sm sm:text-base text-slate-600">
             Anchor a marketing claim in real Stripe customer evidence. Paste a draft sentence,
             get specific metrics with verbatim quotes you can cite.
           </p>
         </header>
 
         <form onSubmit={handleSubmit} className="space-y-3">
+          <div>
+            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-slate-500">
+              Try one of these
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {DEMO_CLAIMS.map((demo) => (
+                <button
+                  key={demo.label}
+                  type="button"
+                  onClick={() => loadDemoClaim(demo.claim)}
+                  disabled={loading}
+                  className="inline-flex items-center rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-medium text-slate-700 shadow-sm transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {demo.label}
+                </button>
+              ))}
+            </div>
+          </div>
           <label htmlFor="claim" className="block text-sm font-medium text-slate-700">
             Your claim
           </label>
@@ -138,10 +214,11 @@ export default function Page() {
         </form>
 
         <section className="mt-10" aria-live="polite">
-          {loading && <LoadingState />}
-          {error && !loading && <ErrorState message={error} />}
-          {!loading && !error && cards !== null && cards.length === 0 && <EmptyState />}
-          {!loading && !error && cards !== null && cards.length > 0 && (
+          {easterEgg && <EasterEggCard egg={easterEgg} />}
+          {!easterEgg && loading && <LoadingState />}
+          {!easterEgg && error && !loading && <ErrorState message={error} />}
+          {!easterEgg && !loading && !error && cards !== null && cards.length === 0 && <EmptyState />}
+          {!easterEgg && !loading && !error && cards !== null && cards.length > 0 && (
             <div className="space-y-4">
               <h2 className="text-sm font-medium uppercase tracking-wide text-slate-500">
                 {cards.length} {cards.length === 1 ? 'result' : 'results'} — click one to rewrite
@@ -161,7 +238,7 @@ export default function Page() {
           )}
         </section>
 
-        {submittedClaim && selectedId && (
+        {!easterEgg && submittedClaim && selectedId && (
           <section className="mt-8" aria-live="polite">
             <RewritePanel
               originalClaim={submittedClaim}
@@ -205,6 +282,36 @@ function EmptyState() {
     <div className="rounded-lg border border-slate-200 bg-white px-4 py-6 text-sm text-slate-600">
       No matching evidence in the corpus. Try a different claim, or a Stripe-product angle
       (Billing, Connect, Atlas, Tax, etc.).
+    </div>
+  );
+}
+
+function EasterEggCard({ egg }: { egg: EasterEgg }) {
+  return (
+    <div className="rounded-xl border-2 border-indigo-200 bg-gradient-to-br from-indigo-50 to-white p-6 shadow-sm sm:p-8">
+      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-indigo-600">
+        Breaking the fourth wall
+      </p>
+      <p className="mt-3 text-base sm:text-lg text-slate-800">{egg.message}</p>
+      <div className="mt-5 flex flex-wrap items-center gap-3">
+        <a
+          href={egg.cta_url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex min-h-[44px] items-center justify-center rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+        >
+          {egg.cta_label} ↗
+        </a>
+        <a
+          href={`mailto:${egg.author_email}?subject=Maester%20%2F%20FDA%20Marketing`}
+          className="inline-flex min-h-[44px] items-center text-sm font-medium text-indigo-700 hover:text-indigo-900 hover:underline"
+        >
+          Email {egg.author} directly →
+        </a>
+      </div>
+      <p className="mt-4 text-xs text-slate-500">
+        (Per-IP daily counter tripped — built into the demo on purpose. Thanks for engaging this hard.)
+      </p>
     </div>
   );
 }

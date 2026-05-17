@@ -41,7 +41,14 @@ Built as a portfolio centerpiece for the Stripe Forward Deployed AI Accelerator,
 
 **Why pre-filter, not full-index-cached.** First iteration shipped the full 1,243-card index in a cache-controlled Anthropic system block (~100k tokens). Cold-cache first-call latency hit ~5 min (undici's 300s headers timeout); reverted. Pre-filter is a constant-cost local step (~10ms over 1,243 cards), keeps per-call latency to ~5-10s for the LLM second pass.
 
-**Polish + deploy** = chunks 7-8, pending.
+**Polish** (chunk 7, shipped):
+
+- 3 pre-loaded demo claim buttons above the textarea (Stripe-on-Stripe / Known customer / Vague-generic) for one-click reviewer onboarding.
+- `middleware.ts` at root: per-IP daily counter; 11th request from same IP in 24h returns 200 with `{ easter_egg: true, message, cta_url, ... }`. UI swaps the evidence-cards section for a fourth-wall recruiting card (links to the Stripe FDA Marketing job posting + my email). Counter posture is recruiting hook, not 429 cost gate; a marketer using the demo at a realistic pace will never see it. Bot-floor protection only.
+- Counter store DI seam at `lib/counter-store.ts`: Upstash Redis adapter (edge-runtime, REST-mode, via `@upstash/redis`) when `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` are set in env; in-memory Map adapter otherwise (dev / fallback). Cost ceiling for runaway-script abuse is `DEMO_PAUSED=true` env-var kill-switch (manual, not automatic) — the Anthropic dashboard is the tripwire.
+- Branding pass: indigo accent kept, tagline "Claim → evidence → Stripe-voice rewrite" above the title, demo-claim chip styling, cleaner heading hierarchy.
+
+**Deploy** = chunk 8, pending.
 
 ## Local dev
 
@@ -60,6 +67,7 @@ npm run test:find-evidence            # 5-claim acceptance test against localhos
 - `npm run test:index` — validate `corpus/evidence-index.json` (shape + 20-card substring-quote spot check).
 - `npm run test:find-evidence` — 5-claim integration test against `/api/find-evidence` (real Anthropic calls).
 - `npm run test:rewrite` — 3-pick integration test against `/api/rewrite` (real Anthropic calls).
+- `npm run test:rate-wall` — 11-request rate-wall acceptance test (uses nonsense claim → no Anthropic calls). Counter state is per-process (in-memory) or per-day (Upstash); restart `npm run dev`, or pass a fresh `TEST_IP=...`, between runs.
 
 ## Spec
 

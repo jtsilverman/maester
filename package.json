@@ -12,10 +12,12 @@
     "test:corpus": "node scripts/validate-corpus.mjs",
     "test:index": "node scripts/validate-evidence-index.mjs",
     "test:find-evidence": "node scripts/test-find-evidence.mjs",
-    "test:rewrite": "node scripts/test-rewrite.mjs"
+    "test:rewrite": "node scripts/test-rewrite.mjs",
+    "test:rate-wall": "node scripts/test-rate-wall.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.40.0",
+    "@upstash/redis": "^1.38.0",
     "cheerio": "^1.0.0",
     "next": "^15.1.0",
     "p-limit": "^6.1.0",
