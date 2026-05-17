@@ -65,3 +65,63 @@ Run this checklist against the current scaffold page. Expected: almost everythin
 ## GREEN state (post-implementation)
 
 Every checkbox above passes on both desktop and mobile widths.
+
+---
+
+# Chunk 6 — Rewrite mode UI acceptance checklist
+
+Manual + Playwright-driven live-integration acceptance for the rewrite mode in
+`app/page.tsx`. Failing-test artifact per chunk 6 (per spec § Test strategy:
+"Frontend: manual testing in browser. Mobile (iPhone) + desktop.").
+
+## How to run
+
+Same as chunk 5: `WATCHPACK_POLLING=true npm run dev`, open `http://localhost:3000`.
+
+## Per-card interaction
+
+- [ ] Each evidence card now carries a "Rewrite my claim using this" button
+- [ ] Button has a touch-friendly tap target (≥36px high)
+- [ ] Hovering or clicking a card does NOT trigger the source link (link `onClick` is `stopPropagation`'d)
+- [ ] Clicking "Rewrite my claim using this" highlights the selected card (indigo border + ring)
+- [ ] Selected card's button text flips to "Rewrite with this" (active state)
+- [ ] Other cards retain "Rewrite my claim using this" label
+
+## Rewrite panel (appears below cards after a card is clicked)
+
+- [ ] Section header "Rewrite"
+- [ ] Side-by-side layout: "Your draft" on the left, "Stripe-voice rewrite" on the right (desktop)
+- [ ] Stacks vertically on mobile (sm: breakpoint at 640px)
+- [ ] Spinner + "Rewriting…" copy during the API call
+- [ ] On success: rewrite paragraph + "Source: <Customer> customer story ↗" link to the stripe.com page
+- [ ] Source link opens `https://stripe.com/customers/<slug>` in a new tab
+- [ ] On error: red error message visible, no crashed UI
+
+## Card-swap behavior
+
+- [ ] Clicking a different card replaces the rewrite (does not stack)
+- [ ] Previous card's button reverts to "Rewrite my claim using this"
+- [ ] New card's button becomes active "Rewrite with this"
+- [ ] Spinner reappears briefly during the second API call
+- [ ] New rewrite uses the second card's customer + metric
+
+## Live integration
+
+- [ ] **Stripe-on-Stripe claim** → click any card → rewrite returns in ≤5s with the customer named + a metric token from the card carried verbatim
+- [ ] Click a second card → rewrite swaps cleanly, anchored on the second card's evidence
+- [ ] **Rapid clicks** on multiple cards: only the most-recently-clicked card's rewrite displays (no stale results race)
+- [ ] Banlist check: rewrite contains no `leverage / unlock / seamless / streamline / empower / synergy / etc.` (visual scan or check server log for `rewrite_fallback=banlist_hits` line)
+
+## RED state (pre-implementation)
+
+Run this checklist against the chunk 5 page. Expected: cards render but no
+"Rewrite" button per card, no rewrite panel.
+
+## GREEN state (post-implementation)
+
+Every checkbox above passes on both desktop and mobile widths. Logged GREEN run
+2026-05-17: claim "Stripe Billing helps subscription companies grow
+internationally" → 5 cards in ~12s → clicked Moon Holidays → rewrite carried
+"600%" + "Southeast Asia" in 2.2s → clicked Artlogic → rewrite swapped cleanly
+with "72%" + "European sales" in 2.0s. Mobile 390px width: panel stacked
+vertically, all controls reachable.

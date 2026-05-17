@@ -33,14 +33,15 @@ Built as a portfolio centerpiece for the Stripe Forward Deployed AI Accelerator,
 - `corpus/stripe-customers.json` (524 stories, ~7.4 MB) — raw scrape of `stripe.com/customers/*` pages with `{slug, customer, url, raw_text, ...}`. Static snapshot, regenerated only via `npm run scrape`.
 - `corpus/evidence-index.json` (1,243 cards across 458 stories) — structured metric extractions per story. Each card: `{slug, customer, metric, baseline, exact_quote, source_span, claim_type}`. Built by `scripts/build-evidence-index.mjs` + `scripts/retry-evidence-index.mjs` running the `maester` Claude Code skill across the corpus.
 
-**Server layer** (chunk 4, this commit):
+**Server layer** (chunks 4 + 6):
 
 - `app/api/find-evidence/route.ts` — POST endpoint. Two-stage retrieval: (1) local token-overlap pre-filter ranks the 1,243-card index down to top 80 candidates; (2) `claude-sonnet-4-6` ranks the candidates and assigns `fit_score 0-100`. Returns augmented cards with `source_url`, `has_baseline`, `fit_score`. Empty-array response when nothing in the corpus matches.
-- Producer-side validation drops invalid picks (unknown slug, bad shape, duplicate) with structured `find_evidence_fallback={reason}` logs; consumer-side guarantees downstream contract.
+- `app/api/rewrite/route.ts` — POST endpoint. Takes `{ claim, evidence_id }` (where `evidence_id` is the `slug|start|end` key of the picked card), asks `claude-sonnet-4-6` to rewrite the claim in Stripe voice anchored on that card's metric. Returns `{ rewrite, citation: { customer, source_url, exact_quote }, elapsed_ms }`. ~2s per call.
+- Both endpoints follow producer-side validation per the belt-and-braces pattern: structured `<event>_fallback={reason}` logs for observability (banlist hits, missing customer, missing anchor token); consumer (test + UI) carries the contract.
 
 **Why pre-filter, not full-index-cached.** First iteration shipped the full 1,243-card index in a cache-controlled Anthropic system block (~100k tokens). Cold-cache first-call latency hit ~5 min (undici's 300s headers timeout); reverted. Pre-filter is a constant-cost local step (~10ms over 1,243 cards), keeps per-call latency to ~5-10s for the LLM second pass.
 
-**UI + rewrite + polish + deploy** = chunks 5-8, pending.
+**Polish + deploy** = chunks 7-8, pending.
 
 ## Local dev
 
@@ -57,7 +58,8 @@ npm run test:find-evidence            # 5-claim acceptance test against localhos
 - `npm run scrape` — re-scrape the Stripe customers corpus.
 - `npm run test:corpus` — validate `corpus/stripe-customers.json`.
 - `npm run test:index` — validate `corpus/evidence-index.json` (shape + 20-card substring-quote spot check).
-- `npm run test:find-evidence` — 5-claim integration test against the route (real Anthropic calls).
+- `npm run test:find-evidence` — 5-claim integration test against `/api/find-evidence` (real Anthropic calls).
+- `npm run test:rewrite` — 3-pick integration test against `/api/rewrite` (real Anthropic calls).
 
 ## Spec
 
