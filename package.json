@@ -5,12 +5,27 @@
   "type": "module",
   "description": "Evidence-anchoring tool for Stripe marketing claims",
   "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
     "scrape": "node scripts/scrape-stripe-customers.mjs",
-    "test:corpus": "node scripts/validate-corpus.mjs"
+    "test:corpus": "node scripts/validate-corpus.mjs",
+    "test:index": "node scripts/validate-evidence-index.mjs",
+    "test:find-evidence": "node scripts/test-find-evidence.mjs"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.40.0",
     "cheerio": "^1.0.0",
-    "p-limit": "^6.1.0"
+    "next": "^15.1.0",
+    "p-limit": "^6.1.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "typescript": "^5.7.0"
   },
   "engines": {
     "node": ">=20"
