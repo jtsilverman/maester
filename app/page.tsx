@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 type EvidenceCard = {
   slug: string;
@@ -67,6 +67,20 @@ const DEMO_CLAIMS: { label: string; claim: string }[] = [
   },
 ];
 
+// Customer names appearing in the corpus — used as a "trust row" under the hero,
+// mirroring stripe.com's logo strip. We don't have logos (chunk-1 didn't scrape
+// them) so we render names only.
+const FEATURED_CUSTOMERS = [
+  'Atlassian',
+  'Lyft',
+  'Cursor',
+  'Coinbase',
+  'Shopify',
+  'Klarna',
+  'Mindbody',
+  'Reach',
+];
+
 export default function Page() {
   const [claim, setClaim] = useState('');
   const [submittedClaim, setSubmittedClaim] = useState<string | null>(null);
@@ -81,6 +95,8 @@ export default function Page() {
 
   const [easterEgg, setEasterEgg] = useState<EasterEgg | null>(null);
 
+  const tryItRef = useRef<HTMLDivElement | null>(null);
+
   const canSubmit = claim.trim().length > 0 && !loading;
 
   function loadDemoClaim(text: string) {
@@ -92,6 +108,19 @@ export default function Page() {
     setRewriteError(null);
     setEasterEgg(null);
   }
+
+  function scrollToTryIt() {
+    tryItRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  useEffect(() => {
+    if (submittedClaim && (cards || error || easterEgg)) {
+      // Scroll results into view after a successful submit.
+      document
+        .getElementById('results')
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [cards, error, easterEgg, submittedClaim]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -158,128 +187,256 @@ export default function Page() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50">
-      <div className="mx-auto max-w-2xl px-5 py-10 sm:py-16">
-        <header className="mb-8">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-indigo-600">
-            Claim → evidence → Stripe-voice rewrite
-          </p>
-          <h1 className="mt-2 text-3xl sm:text-4xl font-semibold tracking-tight text-slate-900">
-            Maester
-          </h1>
-          <p className="mt-3 text-sm sm:text-base text-slate-600">
-            Anchor a marketing claim in real Stripe customer evidence. Paste a draft sentence,
-            get specific metrics with verbatim quotes you can cite.
-          </p>
-        </header>
+    <>
+      <NavBar />
 
-        <form onSubmit={handleSubmit} className="space-y-3">
-          <div>
-            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-slate-500">
-              Try one of these
+      <section className="hero pb-20 sm:pb-32">
+        <div className="stripe-gradient" aria-hidden />
+        <div className="hero-content mx-auto max-w-7xl px-6 pt-24 sm:px-10 sm:pt-32">
+          <p className="inline-flex items-center gap-2 text-[13px] text-ink-soft">
+            <span className="inline-block h-1.5 w-1.5 rounded-full bg-success-ink animate-pulse" />
+            Built for a Stripe FDA Marketing portfolio submission
+            <span className="text-ink-faint">·</span>
+            <a
+              href="https://stripe.com/jobs/listing/forward-deployed-ai-accelerator-marketing/7747638"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium text-brand hover:text-brand-hover hover:underline"
+            >
+              View the role →
+            </a>
+          </p>
+          <h1 className="mt-6 max-w-4xl text-5xl sm:text-7xl font-semibold tracking-[-0.025em] text-ink leading-[1.04]">
+            Evidence-anchored marketing claims,{' '}
+            <span className="gradient-text">in Stripe voice.</span>
+          </h1>
+          <p className="mt-6 max-w-2xl text-lg sm:text-xl text-ink-soft leading-[1.55]">
+            Paste a marketing claim. Get specific, source-attributed metrics from real
+            Stripe customer stories — and a tightened rewrite of your sentence,
+            anchored on the evidence you pick.
+          </p>
+          <div className="mt-10 flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={scrollToTryIt}
+              className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-full bg-brand px-5 text-[15px] font-medium text-white shadow-[0_2px_5px_rgba(99,91,255,0.18)] transition hover:bg-brand-hover focus:outline-none focus:ring-2 focus:ring-brand/40 focus:ring-offset-2"
+            >
+              Try it
+              <span aria-hidden>→</span>
+            </button>
+            <a
+              href="https://github.com/jtsilverman/maester"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-full bg-white border border-line px-5 text-[15px] font-medium text-ink shadow-[0_1px_2px_rgba(10,37,64,0.04)] transition hover:border-ink-faint focus:outline-none focus:ring-2 focus:ring-brand/30 focus:ring-offset-2"
+            >
+              <GithubMark />
+              See the source
+            </a>
+          </div>
+
+          <div className="mt-16 sm:mt-20">
+            <p className="text-[12px] font-medium uppercase tracking-[0.12em] text-ink-subdued">
+              Evidence pool draws from real Stripe customer stories
             </p>
-            <div className="flex flex-wrap gap-2">
-              {DEMO_CLAIMS.map((demo) => (
-                <button
-                  key={demo.label}
-                  type="button"
-                  onClick={() => loadDemoClaim(demo.claim)}
-                  disabled={loading}
-                  className="inline-flex items-center rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-medium text-slate-700 shadow-sm transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 disabled:cursor-not-allowed disabled:opacity-60"
+            <div className="mt-4 flex flex-wrap items-center gap-x-7 gap-y-2">
+              {FEATURED_CUSTOMERS.map((name) => (
+                <span
+                  key={name}
+                  className="text-[15px] sm:text-base font-medium text-ink-soft"
                 >
-                  {demo.label}
-                </button>
+                  {name}
+                </span>
               ))}
             </div>
           </div>
-          <label htmlFor="claim" className="block text-sm font-medium text-slate-700">
-            Your claim
-          </label>
-          <textarea
-            id="claim"
-            value={claim}
-            onChange={(e) => setClaim(e.target.value)}
-            disabled={loading}
-            rows={3}
-            placeholder="e.g. Stripe Billing helps subscription companies grow internationally."
-            className="block w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-base text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500"
-          />
-          <button
-            type="submit"
-            disabled={!canSubmit}
-            className="inline-flex min-h-[44px] items-center justify-center rounded-lg bg-indigo-600 px-5 py-2.5 text-base font-medium text-white shadow-sm transition hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-slate-300"
-          >
-            {loading ? 'Finding evidence…' : 'Find evidence'}
-          </button>
-        </form>
+        </div>
+      </section>
 
-        <section className="mt-10" aria-live="polite">
-          {easterEgg && <EasterEggCard egg={easterEgg} />}
-          {!easterEgg && loading && <LoadingState />}
-          {!easterEgg && error && !loading && <ErrorState message={error} />}
-          {!easterEgg && !loading && !error && cards !== null && cards.length === 0 && <EmptyState />}
+      <section ref={tryItRef} className="bg-bg pb-24 sm:pb-32">
+        <div className="mx-auto max-w-7xl px-6 sm:px-10">
+          <div className="mx-auto max-w-3xl">
+            <p className="text-[13px] font-semibold uppercase tracking-[0.14em] text-brand">
+              Try a claim
+            </p>
+            <h2 className="mt-3 text-3xl sm:text-[2.5rem] font-semibold tracking-[-0.02em] text-ink leading-[1.1]">
+              Type a marketing claim. Get evidence.
+            </h2>
+            <p className="mt-4 text-[15px] sm:text-base text-ink-soft leading-relaxed">
+              Pick one of the example claims below, or paste your own. Maester ranks
+              the static evidence index and returns the strongest matches — each with
+              the verbatim quote, the source URL, and a fit score.
+            </p>
+
+            <form onSubmit={handleSubmit} className="mt-10 space-y-5">
+              <div>
+                <p className="mb-2.5 text-[12px] font-semibold uppercase tracking-[0.12em] text-ink-subdued">
+                  Examples
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {DEMO_CLAIMS.map((demo) => (
+                    <button
+                      key={demo.label}
+                      type="button"
+                      onClick={() => loadDemoClaim(demo.claim)}
+                      disabled={loading}
+                      className="inline-flex items-center rounded-full border border-line bg-white px-3.5 py-1.5 text-[13px] font-medium text-ink-soft transition hover:border-brand hover:bg-brand-faint hover:text-brand focus:outline-none focus:ring-2 focus:ring-brand/25 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {demo.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label
+                  htmlFor="claim"
+                  className="block text-[13px] font-semibold text-ink-soft mb-2"
+                >
+                  Your claim
+                </label>
+                <textarea
+                  id="claim"
+                  value={claim}
+                  onChange={(e) => setClaim(e.target.value)}
+                  disabled={loading}
+                  rows={3}
+                  placeholder="e.g. Stripe Billing helps subscription companies grow internationally."
+                  className="block w-full rounded-xl border border-line bg-white px-4 py-3.5 text-[15px] text-ink shadow-[0_1px_2px_rgba(10,37,64,0.04)] placeholder:text-ink-faint focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20 disabled:cursor-not-allowed disabled:bg-surface disabled:text-ink-subdued"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={!canSubmit}
+                className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-full bg-brand px-6 text-[15px] font-medium text-white shadow-[0_2px_5px_rgba(99,91,255,0.18)] transition hover:bg-brand-hover focus:outline-none focus:ring-2 focus:ring-brand/40 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-line-strong disabled:shadow-none"
+              >
+                {loading ? 'Finding evidence…' : 'Find evidence'}
+                {!loading && <span aria-hidden>→</span>}
+              </button>
+            </form>
+
+            <section id="results" className="mt-16 scroll-mt-12" aria-live="polite">
+              {easterEgg && <EasterEggCard egg={easterEgg} />}
+              {!easterEgg && loading && <LoadingState />}
+              {!easterEgg && error && !loading && <ErrorState message={error} />}
+              {!easterEgg && !loading && !error && cards !== null && cards.length === 0 && (
+                <EmptyState />
+              )}
+            </section>
+          </div>
+
           {!easterEgg && !loading && !error && cards !== null && cards.length > 0 && (
-            <div className="space-y-4">
-              <h2 className="text-sm font-medium uppercase tracking-wide text-slate-500">
-                {cards.length} {cards.length === 1 ? 'result' : 'results'} — click one to rewrite
-              </h2>
-              {cards.map((card) => {
-                const id = evidenceId(card);
-                return (
-                  <EvidenceCardView
-                    key={id}
-                    card={card}
-                    selected={selectedId === id}
-                    onSelect={() => handleCardClick(card)}
-                  />
-                );
-              })}
+            <div className="mt-2">
+              <div className="flex items-baseline justify-between border-b border-line pb-3 mb-6">
+                <h3 className="text-[13px] font-semibold uppercase tracking-[0.12em] text-ink-subdued">
+                  Evidence — {cards.length} {cards.length === 1 ? 'result' : 'results'}
+                </h3>
+                <p className="text-[13px] text-ink-faint">Click a tile to rewrite your claim using it.</p>
+              </div>
+              <div className="grid gap-5 sm:grid-cols-2">
+                {cards.map((card) => {
+                  const id = evidenceId(card);
+                  return (
+                    <EvidenceCardView
+                      key={id}
+                      card={card}
+                      selected={selectedId === id}
+                      onSelect={() => handleCardClick(card)}
+                    />
+                  );
+                })}
+              </div>
             </div>
           )}
-        </section>
+        </div>
+      </section>
 
-        {!easterEgg && submittedClaim && selectedId && (
-          <section className="mt-8" aria-live="polite">
+      {!easterEgg && submittedClaim && selectedId && (
+        <section className="bg-ink py-20 sm:py-28">
+          <div className="mx-auto max-w-7xl px-6 sm:px-10">
             <RewritePanel
               originalClaim={submittedClaim}
               rewrite={rewrite}
               loading={rewriteLoading}
               error={rewriteError}
             />
-          </section>
-        )}
+          </div>
+        </section>
+      )}
 
-        <footer className="mt-16 border-t border-slate-200 pt-6 text-xs text-slate-500">
-          Corpus: public Stripe customer stories (scraped snapshot). Cards are LLM-ranked against
-          the claim; click each source link to verify the quote on Stripe’s site.
-        </footer>
-      </div>
-    </main>
+      <Footer />
+    </>
+  );
+}
+
+function NavBar() {
+  return (
+    <header className="absolute top-0 inset-x-0 z-10">
+      <nav className="mx-auto max-w-7xl px-6 sm:px-10 h-16 flex items-center justify-between">
+        <a
+          href="/"
+          className="text-[18px] font-semibold tracking-[-0.01em] text-ink"
+        >
+          Maester
+        </a>
+        <div className="flex items-center gap-5">
+          <a
+            href="https://github.com/jtsilverman/maester"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hidden sm:inline-flex items-center gap-1.5 text-[14px] font-medium text-ink-soft hover:text-ink"
+          >
+            <GithubMark />
+            Source
+          </a>
+          <a
+            href="https://stripe.com/jobs/listing/forward-deployed-ai-accelerator-marketing/7747638"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 rounded-full bg-ink px-3.5 py-1.5 text-[13px] font-medium text-white hover:bg-ink-soft"
+          >
+            FDA Marketing role
+            <span aria-hidden>→</span>
+          </a>
+        </div>
+      </nav>
+    </header>
+  );
+}
+
+function GithubMark() {
+  return (
+    <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden className="inline-block">
+      <path
+        fillRule="evenodd"
+        fill="currentColor"
+        d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"
+      />
+    </svg>
   );
 }
 
 function LoadingState() {
   return (
-    <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white px-4 py-6 text-slate-600">
-      <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-indigo-600" />
-      <span className="text-sm">Searching the corpus… this takes about 10 seconds.</span>
+    <div className="flex items-center gap-3 rounded-xl border border-line bg-white px-5 py-5 text-[14px] text-ink-soft shadow-[0_1px_2px_rgba(10,37,64,0.04)]">
+      <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-line-strong border-t-brand" />
+      <span>Searching the corpus… this takes about 10 seconds.</span>
     </div>
   );
 }
 
 function ErrorState({ message }: { message: string }) {
   return (
-    <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-4 text-sm text-red-800">
-      <p className="font-medium">Something broke.</p>
-      <p className="mt-1 text-red-700">{message}</p>
-      <p className="mt-2 text-red-700">Try again, or check the dev console for details.</p>
+    <div className="rounded-xl border border-danger-line bg-danger-soft px-5 py-4 text-[14px] text-danger-ink">
+      <p className="font-semibold">Something broke.</p>
+      <p className="mt-1">{message}</p>
+      <p className="mt-2 text-ink-soft">Try again, or check the dev console for details.</p>
     </div>
   );
 }
 
 function EmptyState() {
   return (
-    <div className="rounded-lg border border-slate-200 bg-white px-4 py-6 text-sm text-slate-600">
+    <div className="rounded-xl border border-line bg-surface-warm px-5 py-5 text-[14px] text-ink-soft">
       No matching evidence in the corpus. Try a different claim, or a Stripe-product angle
       (Billing, Connect, Atlas, Tax, etc.).
     </div>
@@ -288,30 +445,45 @@ function EmptyState() {
 
 function EasterEggCard({ egg }: { egg: EasterEgg }) {
   return (
-    <div className="rounded-xl border-2 border-indigo-200 bg-gradient-to-br from-indigo-50 to-white p-6 shadow-sm sm:p-8">
-      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-indigo-600">
-        Breaking the fourth wall
-      </p>
-      <p className="mt-3 text-base sm:text-lg text-slate-800">{egg.message}</p>
-      <div className="mt-5 flex flex-wrap items-center gap-3">
-        <a
-          href={egg.cta_url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex min-h-[44px] items-center justify-center rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-        >
-          {egg.cta_label} ↗
-        </a>
-        <a
-          href={`mailto:${egg.author_email}?subject=Maester%20%2F%20FDA%20Marketing`}
-          className="inline-flex min-h-[44px] items-center text-sm font-medium text-indigo-700 hover:text-indigo-900 hover:underline"
-        >
-          Email {egg.author} directly →
-        </a>
+    <div className="relative overflow-hidden rounded-2xl bg-ink p-8 sm:p-10 text-white shadow-[0_8px_24px_rgba(10,37,64,0.18)]">
+      <div
+        aria-hidden
+        className="absolute -top-1/3 -right-1/3 h-[120%] w-[80%]"
+        style={{
+          background:
+            'radial-gradient(ellipse 60% 60% at 70% 30%, rgba(199,121,255,0.55) 0%, transparent 60%), radial-gradient(ellipse 60% 60% at 30% 70%, rgba(99,91,255,0.55) 0%, transparent 60%)',
+          filter: 'blur(6px)',
+          pointerEvents: 'none',
+        }}
+      />
+      <div className="relative">
+        <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-white/70">
+          Breaking the fourth wall
+        </p>
+        <p className="mt-4 text-2xl sm:text-3xl font-semibold tracking-[-0.015em] leading-tight">
+          {egg.message}
+        </p>
+        <div className="mt-7 flex flex-wrap items-center gap-3">
+          <a
+            href={egg.cta_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-full bg-white px-5 text-[15px] font-medium text-ink shadow-[0_2px_6px_rgba(0,0,0,0.18)] transition hover:bg-white/90 focus:outline-none focus:ring-2 focus:ring-white/60"
+          >
+            {egg.cta_label}
+            <span aria-hidden>→</span>
+          </a>
+          <a
+            href={`mailto:${egg.author_email}?subject=Maester%20%2F%20FDA%20Marketing`}
+            className="inline-flex min-h-[44px] items-center text-[15px] font-medium text-white/85 hover:text-white hover:underline"
+          >
+            Email {egg.author} directly →
+          </a>
+        </div>
+        <p className="mt-6 text-[13px] text-white/60">
+          Per-IP daily counter tripped — built into the demo on purpose. Thanks for engaging this hard.
+        </p>
       </div>
-      <p className="mt-4 text-xs text-slate-500">
-        (Per-IP daily counter tripped — built into the demo on purpose. Thanks for engaging this hard.)
-      </p>
     </div>
   );
 }
@@ -326,41 +498,42 @@ function EvidenceCardView({
   onSelect: () => void;
 }) {
   const ring = selected
-    ? 'border-indigo-500 ring-2 ring-indigo-500/30'
-    : 'border-slate-200 hover:border-indigo-300 hover:shadow-md';
+    ? 'border-brand shadow-[0_0_0_3px_rgba(99,91,255,0.18),0_2px_8px_rgba(10,37,64,0.06)]'
+    : 'border-line shadow-[0_1px_2px_rgba(10,37,64,0.04)] hover:border-ink-faint hover:shadow-[0_2px_8px_rgba(10,37,64,0.06)]';
   return (
-    <article className={`rounded-xl border bg-white p-5 shadow-sm transition sm:p-6 ${ring}`}>
+    <article className={`flex h-full flex-col rounded-2xl border bg-white p-6 transition ${ring}`}>
       <header className="flex flex-wrap items-baseline justify-between gap-2">
-        <h3 className="text-lg font-semibold text-slate-900">{card.customer}</h3>
+        <h3 className="text-xl font-semibold tracking-[-0.01em] text-ink">{card.customer}</h3>
         <a
           href={card.source_url}
           target="_blank"
           rel="noopener noreferrer"
           onClick={(e) => e.stopPropagation()}
-          className="text-xs font-medium text-indigo-600 hover:text-indigo-800 hover:underline"
+          className="text-[13px] font-medium text-brand hover:text-brand-hover hover:underline"
         >
-          View on stripe.com ↗
+          stripe.com →
         </a>
       </header>
 
-      <blockquote className="mt-3 border-l-4 border-indigo-200 pl-4 italic text-slate-700">
-        “{card.exact_quote}”
+      <blockquote className="mt-4 text-[15px] text-ink-soft leading-[1.55]">
+        &ldquo;{card.exact_quote}&rdquo;
       </blockquote>
 
-      <div className="mt-4 flex flex-wrap gap-2">
+      <div className="mt-5 flex flex-wrap items-center gap-2">
         <ClaimTypeBadge type={card.claim_type} />
         <BaselineBadge hasBaseline={card.has_baseline} />
       </div>
 
       <FitBar score={card.fit_score} />
 
-      <div className="mt-4">
+      <div className="mt-6 pt-5 border-t border-line-soft flex-1 flex items-end">
         <button
           type="button"
           onClick={onSelect}
-          className="inline-flex min-h-[36px] items-center justify-center rounded-md bg-slate-900 px-3.5 py-2 text-xs font-medium text-white shadow-sm transition hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2"
+          className="inline-flex items-center gap-1.5 text-[14px] font-semibold text-brand hover:text-brand-hover"
         >
-          {selected ? 'Rewrite with this' : 'Rewrite my claim using this'}
+          {selected ? 'Rewriting with this evidence' : 'Rewrite my claim using this'}
+          <span aria-hidden>→</span>
         </button>
       </div>
     </article>
@@ -379,40 +552,47 @@ function RewritePanel({
   error: string | null;
 }) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-      <h2 className="text-sm font-medium uppercase tracking-wide text-slate-500">Rewrite</h2>
-      <div className="mt-4 grid gap-6 sm:grid-cols-2">
+    <div>
+      <p className="text-[13px] font-semibold uppercase tracking-[0.14em] text-white/60">
+        Stripe-voice rewrite
+      </p>
+      <h2 className="mt-3 text-3xl sm:text-4xl font-semibold tracking-[-0.02em] text-white leading-tight">
+        Anchored on the evidence you picked.
+      </h2>
+      <div className="mt-10 grid gap-10 sm:grid-cols-2 sm:gap-14">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+          <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-white/50">
             Your draft
           </p>
-          <p className="mt-2 text-base text-slate-700">{originalClaim}</p>
+          <p className="mt-3 text-lg text-white/75 leading-relaxed">{originalClaim}</p>
         </div>
-        <div className="border-l-0 border-t border-slate-100 pt-6 sm:border-l sm:border-t-0 sm:pl-6 sm:pt-0">
-          <p className="text-xs font-semibold uppercase tracking-wide text-indigo-600">
-            Stripe-voice rewrite
+        <div>
+          <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-white/50">
+            Rewritten
           </p>
           {loading && (
-            <div className="mt-2 flex items-center gap-2 text-sm text-slate-500">
-              <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-slate-300 border-t-indigo-600" />
+            <div className="mt-3 flex items-center gap-2 text-[15px] text-white/65">
+              <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
               Rewriting…
             </div>
           )}
           {error && !loading && (
-            <p className="mt-2 text-sm text-red-700">Rewrite failed: {error}</p>
+            <p className="mt-3 text-[15px] text-danger-line">Rewrite failed: {error}</p>
           )}
           {!loading && !error && rewrite && (
             <>
-              <p className="mt-2 text-base font-medium text-slate-900">{rewrite.rewrite}</p>
-              <p className="mt-3 text-xs text-slate-500">
+              <p className="mt-3 text-lg font-medium text-white leading-relaxed">
+                {rewrite.rewrite}
+              </p>
+              <p className="mt-5 text-[13px] text-white/55">
                 Source:{' '}
                 <a
                   href={rewrite.citation.source_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="font-medium text-indigo-600 hover:text-indigo-800 hover:underline"
+                  className="font-medium text-white hover:underline"
                 >
-                  {rewrite.citation.customer} customer story ↗
+                  {rewrite.citation.customer} customer story →
                 </a>
               </p>
             </>
@@ -426,11 +606,11 @@ function RewritePanel({
 function ClaimTypeBadge({ type }: { type: EvidenceCard['claim_type'] }) {
   const isVerified = type === 'verified-by-source';
   const classes = isVerified
-    ? 'bg-emerald-50 text-emerald-800 ring-emerald-200'
-    : 'bg-slate-100 text-slate-700 ring-slate-200';
+    ? 'bg-success-soft text-success-ink'
+    : 'bg-surface text-ink-soft';
   const label = isVerified ? 'Verified by source' : 'Customer-claimed';
   return (
-    <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset ${classes}`}>
+    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-[0.04em] ${classes}`}>
       {label}
     </span>
   );
@@ -438,11 +618,11 @@ function ClaimTypeBadge({ type }: { type: EvidenceCard['claim_type'] }) {
 
 function BaselineBadge({ hasBaseline }: { hasBaseline: boolean }) {
   const classes = hasBaseline
-    ? 'bg-indigo-50 text-indigo-800 ring-indigo-200'
-    : 'bg-amber-50 text-amber-800 ring-amber-200';
+    ? 'bg-brand-soft text-brand'
+    : 'bg-warn-soft text-warn-ink';
   const label = hasBaseline ? 'Has baseline' : 'No baseline';
   return (
-    <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset ${classes}`}>
+    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-[0.04em] ${classes}`}>
       {label}
     </span>
   );
@@ -451,17 +631,97 @@ function BaselineBadge({ hasBaseline }: { hasBaseline: boolean }) {
 function FitBar({ score }: { score: number }) {
   const clamped = Math.max(0, Math.min(100, score));
   return (
-    <div className="mt-4">
+    <div className="mt-5">
       <div className="flex items-baseline justify-between">
-        <span className="text-xs font-medium uppercase tracking-wide text-slate-500">Fit</span>
-        <span className="text-xs font-semibold text-slate-700">{clamped}/100</span>
+        <span className="text-[12px] font-semibold uppercase tracking-[0.12em] text-ink-subdued">
+          Fit
+        </span>
+        <span className="text-[13px] font-semibold tabular-nums text-ink">
+          {clamped}/100
+        </span>
       </div>
-      <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-slate-200">
+      <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-line-soft">
         <div
-          className="h-full rounded-full bg-indigo-600 transition-all"
+          className="h-full rounded-full bg-brand transition-all"
           style={{ width: `${clamped}%` }}
         />
       </div>
     </div>
+  );
+}
+
+function Footer() {
+  return (
+    <footer className="bg-ink text-white">
+      <div className="mx-auto max-w-7xl px-6 sm:px-10 py-16 sm:py-20">
+        <div className="grid gap-10 sm:grid-cols-4">
+          <div className="sm:col-span-2">
+            <p className="text-2xl font-semibold tracking-[-0.01em]">Maester</p>
+            <p className="mt-3 max-w-md text-[15px] text-white/65 leading-relaxed">
+              Built by Jake Silverman as a portfolio piece for Stripe&rsquo;s
+              Forward Deployed AI Accelerator (Marketing) role. The corpus and
+              skill ship as an open-source Claude Code skill.
+            </p>
+          </div>
+          <div>
+            <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-white/45">
+              Open source
+            </p>
+            <ul className="mt-4 space-y-2 text-[14px]">
+              <li>
+                <a
+                  href="https://github.com/jtsilverman/maester"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-white/80 hover:text-white hover:underline"
+                >
+                  Source code on GitHub →
+                </a>
+              </li>
+              <li>
+                <a
+                  href="https://github.com/jtsilverman/maester/tree/main/skills/maester"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-white/80 hover:text-white hover:underline"
+                >
+                  Claude Code skill →
+                </a>
+              </li>
+            </ul>
+          </div>
+          <div>
+            <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-white/45">
+              For Stripe
+            </p>
+            <ul className="mt-4 space-y-2 text-[14px]">
+              <li>
+                <a
+                  href="https://stripe.com/jobs/listing/forward-deployed-ai-accelerator-marketing/7747638"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-white/80 hover:text-white hover:underline"
+                >
+                  The FDA Marketing role →
+                </a>
+              </li>
+              <li>
+                <a
+                  href="mailto:jakesilverman.pro@gmail.com?subject=Maester%20%2F%20FDA%20Marketing"
+                  className="text-white/80 hover:text-white hover:underline"
+                >
+                  Email Jake directly →
+                </a>
+              </li>
+            </ul>
+          </div>
+        </div>
+        <p className="mt-14 border-t border-white/10 pt-8 text-[13px] text-white/45">
+          Corpus: public Stripe customer stories, scraped snapshot. Cards are
+          LLM-ranked against the claim; the source link on each tile verifies the
+          quote on Stripe&rsquo;s site.
+        </p>
+      </div>
+    </footer>
   );
 }

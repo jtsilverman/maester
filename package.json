@@ -14,6 +14,7 @@
     "test:find-evidence": "node scripts/test-find-evidence.mjs",
     "test:rewrite": "node scripts/test-rewrite.mjs",
     "test:rate-wall": "node scripts/test-rate-wall.mjs",
+    "test:restyle": "node scripts/test-restyle.mjs",
     "test:smoke": "node scripts/test-smoke-prod.mjs"
   },
   "dependencies": {
@@ -30,6 +31,7 @@
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "playwright": "^1.60.0",
     "postcss": "^8.5.14",
     "tailwindcss": "^4.3.0",
     "typescript": "^5.7.0"

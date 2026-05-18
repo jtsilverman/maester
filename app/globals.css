@@ -1,14 +1,96 @@
 @import "tailwindcss";
 
+@theme {
+  --font-sans: var(--font-inter), "Söhne", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+  --color-ink: #0a2540;
+  --color-ink-soft: #425466;
+  --color-ink-subdued: #6b7c93;
+  --color-ink-faint: #8898aa;
+
+  --color-bg: #ffffff;
+  --color-surface: #f6f9fc;
+  --color-surface-warm: #fafbfc;
+
+  --color-line: #e3e8ee;
+  --color-line-soft: #f0f3f7;
+  --color-line-strong: #adbdcc;
+
+  --color-brand: #635bff;
+  --color-brand-hover: #5851ec;
+  --color-brand-soft: #ebebff;
+  --color-brand-faint: #f5f5ff;
+
+  --color-success-soft: #cbf4c9;
+  --color-success-ink: #007259;
+  --color-success-line: #a3e3a0;
+
+  --color-warn-soft: #fcf0c8;
+  --color-warn-ink: #b25e09;
+  --color-warn-line: #f8d65e;
+
+  --color-danger-soft: #fde2dd;
+  --color-danger-ink: #b3320d;
+  --color-danger-line: #f5b9a7;
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #0a0a0a;
+  color-scheme: light;
 }
 
 html, body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  letter-spacing: -0.005em;
+}
+
+::selection {
+  background-color: var(--color-brand-soft);
+  color: var(--color-ink);
+}
+
+/* The Stripe gradient swirl — using Stripe's actual fallback PNG
+   asset (the same one stripe.com serves to non-canvas browsers).
+   Lifted directly because Jake explicitly authorized doing so for
+   this portfolio piece targeting Stripe. mix-blend-mode: screen
+   knocks the black background out so only the vivid ribbon shows. */
+.stripe-gradient {
+  position: absolute;
+  top: 0;
+  right: -5%;
+  width: min(900px, 60%);
+  height: auto;
+  aspect-ratio: 2785 / 1950;
+  background-image: url('/stripe-wave.png');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: top right;
+  mix-blend-mode: screen;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* H1 highlight: the punch phrase carries the gradient via background-clip. */
+.gradient-text {
+  background: linear-gradient(95deg, #ff8a8f 0%, #ff80b5 25%, #c779ff 55%, #635bff 85%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Hero-shaped section wrapper. The gradient stays absolute (z-0)
+   while content children rise above it (z-1) without becoming
+   relatively-positioned themselves. */
+.hero {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+.hero > .hero-content {
+  position: relative;
+  z-index: 1;
 }
