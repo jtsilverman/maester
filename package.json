@@ -13,7 +13,8 @@
     "test:index": "node scripts/validate-evidence-index.mjs",
     "test:find-evidence": "node scripts/test-find-evidence.mjs",
     "test:rewrite": "node scripts/test-rewrite.mjs",
-    "test:rate-wall": "node scripts/test-rate-wall.mjs"
+    "test:rate-wall": "node scripts/test-rate-wall.mjs",
+    "test:smoke": "node scripts/test-smoke-prod.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.40.0",

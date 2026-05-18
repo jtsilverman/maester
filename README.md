@@ -1,15 +1,46 @@
 # Maester
 
-Evidence-anchored marketing claim assistant for Stripe customer stories. A PMM pastes a vague marketing claim; Maester surfaces ranked evidence cards from a corpus of real published Stripe customer stories (verbatim metrics + source URLs), and (chunk 6) rewrites the claim in Stripe voice anchored on the chosen evidence.
+**Anchor a marketing claim in real Stripe customer evidence.** Paste a draft sentence; get specific, source-attributed metrics from real Stripe customer stories. Click a card to get the claim rewritten in Stripe voice, cited.
 
-Built as a portfolio centerpiece for the Stripe Forward Deployed AI Accelerator, Marketing role.
+**Live demo:** `https://<pending-chunk-8-deploy>.vercel.app`
 
-## Architecture
+![Maester — empty state](docs/screenshot-empty.png)
+
+## Why this exists
+
+Built as a portfolio centerpiece for Stripe's [Forward Deployed AI Accelerator, Marketing](https://stripe.com/jobs/listing/forward-deployed-ai-accelerator-marketing/7747638) role.
+
+The FDA pattern in one paragraph: observe a real workflow, build a focused tool that compresses it, document it as a reusable Claude Code skill, wrap it in a UI a non-technical operator can use. Maester is that pattern applied to a real Stripe PMM workflow — **evidence-anchoring marketing claims** — compressed from a ~30-minute manual loop (claim → search stripe.com/customers → copy quote → tighten sentence) to ~30 seconds. The tool stops where storytelling begins; the marketer keeps voice, angle, and narrative judgment.
+
+## Try one of these
+
+The deployed app pre-loads three demo claims (Stripe-on-Stripe / Known customer / Vague-generic). Pick one and hit **Find evidence**:
+
+- _"Stripe Billing helps subscription companies grow internationally."_
+- _"Atlassian saw significant subscription revenue growth after migrating to Stripe Billing."_
+- _"Modern payment platforms drive higher conversion for SaaS."_
+
+Or paste anything else. Empty matches (claim has nothing to anchor in the public Stripe corpus) get a graceful "no matches" state.
+
+![Maester — evidence cards + rewrite](docs/screenshot-result.png)
+
+## How it works
+
+Corpus: **524 published Stripe customer stories** (scraped snapshot of `stripe.com/customers`), distilled offline by a Claude Code skill into **1,243 evidence cards** with verbatim metric quotes + character spans into the source text. Each card carries its claim type (`customer-claimed` vs `verified-by-source`) and baseline presence (`has-baseline` vs `missing-baseline`).
+
+At request time:
+
+1. A local token-overlap pre-filter ranks the 1,243-card index down to top 80 candidates in ~10ms.
+2. `claude-sonnet-4-6` ranks the 80 and assigns each a `fit_score 0–100`.
+3. The UI streams cards back, each linking to its `stripe.com/customers/<slug>` source for verification.
+4. Click any card → `claude-sonnet-4-6` rewrites the original claim anchored on that card's metric in Stripe voice (named subject, one numeric token carried verbatim, fluff banlist, ≤40 words).
+
+End-to-end per claim: ~5–10s for evidence, ~2s for rewrite.
 
 ```
 +----------------+      POST /api/find-evidence       +----------------------+
 | Browser UI     |  ───────────────────────────────▶  | Next.js App Router   |
-| (chunk 5)      |                                    | (Vercel, serverless) |
+|                |                                    | (Vercel, edge + node)|
 |                |  ◀───────────────────────────────  |                      |
 +----------------+      { cards: [...] }              +----------+-----------+
                                                                  │
@@ -20,7 +51,7 @@ Built as a portfolio centerpiece for the Stripe Forward Deployed AI Accelerator,
                                                     | (1,243 cards, in-memory)|
                                                     +------------+------------+
                                                                  │
-                                                                 │ (2) rank top 5
+                                                                 │ (2) LLM-rank top 5
                                                                  ▼
                                                     +------------+------------+
                                                     | Anthropic Messages API  |
@@ -28,27 +59,27 @@ Built as a portfolio centerpiece for the Stripe Forward Deployed AI Accelerator,
                                                     +-------------------------+
 ```
 
-**Data layer** (chunks 1–3, shipped):
+## What's in the repo
 
-- `corpus/stripe-customers.json` (524 stories, ~7.4 MB) — raw scrape of `stripe.com/customers/*` pages with `{slug, customer, url, raw_text, ...}`. Static snapshot, regenerated only via `npm run scrape`.
-- `corpus/evidence-index.json` (1,243 cards across 458 stories) — structured metric extractions per story. Each card: `{slug, customer, metric, baseline, exact_quote, source_span, claim_type}`. Built by `scripts/build-evidence-index.mjs` + `scripts/retry-evidence-index.mjs` running the `maester` Claude Code skill across the corpus.
+**Data layer** (chunks 1–3):
+
+- `corpus/stripe-customers.json` (524 stories, ~7.4 MB) — raw scrape of `stripe.com/customers/*` pages. Static snapshot, regenerated only via `npm run scrape`.
+- `corpus/evidence-index.json` (1,243 cards across 458 stories) — structured metric extractions. Built by `scripts/build-evidence-index.mjs` + `scripts/retry-evidence-index.mjs` running the `maester` skill across the corpus.
+- `skills/maester/SKILL.md` — the per-story extraction prompt, runnable standalone as a Claude Code skill (the single source of truth; the batch runners awk-extract it).
 
 **Server layer** (chunks 4 + 6):
 
-- `app/api/find-evidence/route.ts` — POST endpoint. Two-stage retrieval: (1) local token-overlap pre-filter ranks the 1,243-card index down to top 80 candidates; (2) `claude-sonnet-4-6` ranks the candidates and assigns `fit_score 0-100`. Returns augmented cards with `source_url`, `has_baseline`, `fit_score`. Empty-array response when nothing in the corpus matches.
-- `app/api/rewrite/route.ts` — POST endpoint. Takes `{ claim, evidence_id }` (where `evidence_id` is the `slug|start|end` key of the picked card), asks `claude-sonnet-4-6` to rewrite the claim in Stripe voice anchored on that card's metric. Returns `{ rewrite, citation: { customer, source_url, exact_quote }, elapsed_ms }`. ~2s per call.
-- Both endpoints follow producer-side validation per the belt-and-braces pattern: structured `<event>_fallback={reason}` logs for observability (banlist hits, missing customer, missing anchor token); consumer (test + UI) carries the contract.
+- `app/api/find-evidence/route.ts` — two-stage retrieval (pre-filter + LLM rank).
+- `app/api/rewrite/route.ts` — claim rewrite anchored on a chosen card.
+- Both follow a belt-and-braces validation pattern: producer-side `<event>_fallback={reason}` logs for observability, consumer-side contract enforcement.
 
-**Why pre-filter, not full-index-cached.** First iteration shipped the full 1,243-card index in a cache-controlled Anthropic system block (~100k tokens). Cold-cache first-call latency hit ~5 min (undici's 300s headers timeout); reverted. Pre-filter is a constant-cost local step (~10ms over 1,243 cards), keeps per-call latency to ~5-10s for the LLM second pass.
+**Polish layer** (chunk 7):
 
-**Polish** (chunk 7, shipped):
+- 3 pre-loaded demo claim chips above the textarea.
+- `middleware.ts` per-IP daily counter; the 11th request returns an "if Maester feels like the right kind of tool, give me an interview" easter-egg card instead of a 429 (the wall is a recruiting hook, not a cost gate). Threshold is bot-floor, not human-ceiling — a marketer using the tool at any realistic pace never sees it.
+- `lib/counter-store.ts` — DI seam between in-memory `Map` (dev) and Upstash Redis REST (prod). Edge-runtime compatible.
 
-- 3 pre-loaded demo claim buttons above the textarea (Stripe-on-Stripe / Known customer / Vague-generic) for one-click reviewer onboarding.
-- `middleware.ts` at root: per-IP daily counter; 11th request from same IP in 24h returns 200 with `{ easter_egg: true, message, cta_url, ... }`. UI swaps the evidence-cards section for a fourth-wall recruiting card (links to the Stripe FDA Marketing job posting + my email). Counter posture is recruiting hook, not 429 cost gate; a marketer using the demo at a realistic pace will never see it. Bot-floor protection only.
-- Counter store DI seam at `lib/counter-store.ts`: Upstash Redis adapter (edge-runtime, REST-mode, via `@upstash/redis`) when `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` are set in env; in-memory Map adapter otherwise (dev / fallback). Cost ceiling for runaway-script abuse is `DEMO_PAUSED=true` env-var kill-switch (manual, not automatic) — the Anthropic dashboard is the tripwire.
-- Branding pass: indigo accent kept, tagline "Claim → evidence → Stripe-voice rewrite" above the title, demo-claim chip styling, cleaner heading hierarchy.
-
-**Deploy** = chunk 8, pending.
+**Why pre-filter, not full-index-cached.** First iteration shipped the full 1,243-card index in a cache-controlled Anthropic system block (~100k tokens). Cold-cache first-call latency hit ~5 min (undici's 300s headers timeout); reverted. Pre-filter is constant-cost (~10ms) and keeps per-call latency to ~5–10s for the LLM second pass.
 
 ## Local dev
 
@@ -67,8 +98,13 @@ npm run test:find-evidence            # 5-claim acceptance test against localhos
 - `npm run test:index` — validate `corpus/evidence-index.json` (shape + 20-card substring-quote spot check).
 - `npm run test:find-evidence` — 5-claim integration test against `/api/find-evidence` (real Anthropic calls).
 - `npm run test:rewrite` — 3-pick integration test against `/api/rewrite` (real Anthropic calls).
-- `npm run test:rate-wall` — 11-request rate-wall acceptance test (uses nonsense claim → no Anthropic calls). Counter state is per-process (in-memory) or per-day (Upstash); restart `npm run dev`, or pass a fresh `TEST_IP=...`, between runs.
+- `npm run test:rate-wall` — 11-request rate-wall acceptance test (uses a pre-filter-short-circuiting nonsense claim → no Anthropic calls).
+- `npm run test:smoke` — production smoke test. `MAESTER_URL=https://... npm run test:smoke`; optionally also exports `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` to verify the counter key landed.
 
-## Spec
+## Tech stack
 
-Live spec at `~/Documents/projects/Employment/specs/current.md`.
+Next.js 15 (App Router) · React 19 · Tailwind v4 · Anthropic Messages API (`claude-sonnet-4-6`) · Upstash Redis REST · Vercel (edge middleware + node runtime).
+
+## Author
+
+Jake Silverman · [jakesilverman.pro@gmail.com](mailto:jakesilverman.pro@gmail.com)
