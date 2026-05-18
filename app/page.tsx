@@ -195,7 +195,7 @@ export default function Page() {
         <div className="hero-content mx-auto max-w-7xl px-6 pt-24 sm:px-10 sm:pt-32">
           <p className="inline-flex items-center gap-2 text-[13px] text-ink-soft">
             <span className="inline-block h-1.5 w-1.5 rounded-full bg-success-ink animate-pulse" />
-            Built for a Stripe FDA Marketing portfolio submission
+            Built for a Stripe Forward Deployed AI Accelerator, Marketing portfolio submission
             <span className="text-ink-faint">·</span>
             <a
               href="https://stripe.com/jobs/listing/forward-deployed-ai-accelerator-marketing/7747638"
@@ -394,7 +394,7 @@ function NavBar() {
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1 rounded-full bg-ink px-3.5 py-1.5 text-[13px] font-medium text-white hover:bg-ink-soft"
           >
-            FDA Marketing role
+            Forward Deployed AI Accelerator, Marketing role
             <span aria-hidden>→</span>
           </a>
         </div>
@@ -457,10 +457,7 @@ function EasterEggCard({ egg }: { egg: EasterEgg }) {
         }}
       />
       <div className="relative">
-        <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-white/70">
-          Breaking the fourth wall
-        </p>
-        <p className="mt-4 text-2xl sm:text-3xl font-semibold tracking-[-0.015em] leading-tight">
+        <p className="text-2xl sm:text-3xl font-semibold tracking-[-0.015em] leading-tight">
           {egg.message}
         </p>
         <div className="mt-7 flex flex-wrap items-center gap-3">
@@ -474,15 +471,12 @@ function EasterEggCard({ egg }: { egg: EasterEgg }) {
             <span aria-hidden>→</span>
           </a>
           <a
-            href={`mailto:${egg.author_email}?subject=Maester%20%2F%20FDA%20Marketing`}
+            href={`mailto:${egg.author_email}?subject=Maester%20%2F%20Forward%20Deployed%20AI%20Accelerator%2C%20Marketing`}
             className="inline-flex min-h-[44px] items-center text-[15px] font-medium text-white/85 hover:text-white hover:underline"
           >
             Email {egg.author} directly →
           </a>
         </div>
-        <p className="mt-6 text-[13px] text-white/60">
-          Per-IP daily counter tripped — built into the demo on purpose. Thanks for engaging this hard.
-        </p>
       </div>
     </div>
   );
@@ -702,12 +696,12 @@ function Footer() {
                   rel="noopener noreferrer"
                   className="text-white/80 hover:text-white hover:underline"
                 >
-                  The FDA Marketing role →
+                  The Forward Deployed AI Accelerator, Marketing role →
                 </a>
               </li>
               <li>
                 <a
-                  href="mailto:jakesilverman.pro@gmail.com?subject=Maester%20%2F%20FDA%20Marketing"
+                  href="mailto:jakesilverman.pro@gmail.com?subject=Maester%20%2F%20Forward%20Deployed%20AI%20Accelerator%2C%20Marketing"
                   className="text-white/80 hover:text-white hover:underline"
                 >
                   Email Jake directly →

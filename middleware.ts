@@ -50,7 +50,7 @@ function easterEggResponse() {
     {
       easter_egg: true,
       message:
-        "You've put Maester through its paces — if it feels like the kind of tool to build at Stripe, I'd love to talk about the FDA Marketing role.",
+        "You've put Maester through its paces — if it feels like the kind of tool to build at Stripe, I'd love to talk about the Forward Deployed AI Accelerator, Marketing role.",
       cta_label: 'View the role',
       cta_url: STRIPE_JOB_URL,
       author: 'Jake Silverman',
